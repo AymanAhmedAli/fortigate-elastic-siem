@@ -3,6 +3,13 @@
 Real-time security monitoring by integrating FortiGate firewall logs with Elastic Stack (Elasticsearch + Kibana + Logstash).
 
 ## 🏗️ Architecture
+FortiGate Firewall
+↓ Syslog (UDP 5144)
+Logstash
+↓
+Elasticsearch
+↓
+Kibana Dashboard
 
 
 ## 🛠️ Stack
@@ -12,9 +19,11 @@ Real-time security monitoring by integrating FortiGate firewall logs with Elasti
 - **Kibana** 8.19 — Visualization & dashboards
 
 ## 📂 Contents
-- [Setup Guide](setup/)
-- [Logstash Config](configs/)
-- [Screenshots](screenshots/)
+- [Elasticsearch Setup](setup/elasticsearch.md)
+- [Kibana Setup](setup/kibana.md)
+- [Logstash Setup](setup/logstash.md)
+- [FortiGate Config](setup/fortigate.md)
+- [Logstash Config](configs/fortigate.conf)
 
 ## 👤 Author
 **Ayman Ahmed** — IT Specialist | Network Security
