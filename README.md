@@ -3,7 +3,8 @@
 Real-time security monitoring by integrating FortiGate firewall logs with Elastic Stack (Elasticsearch + Kibana + Logstash).
 
 ## 🏗️ Architecture
-FortiGate Firewall
+
+![SIEM Architecture](screenshots/architecture_diagram.png)
 ↓ Syslog (UDP 5144)
 Logstash
 ↓
