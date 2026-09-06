@@ -15,9 +15,17 @@ Kibana Dashboard
 
 ## 🛠️ Stack
 - **FortiGate** v7.0.5 — Firewall & log source
+- **Windows Server 2022** — Active Directory + Winlogbeat
 - **Elasticsearch** 8.19 — Log storage & indexing
 - **Logstash** 8.19 — Log collection & parsing
 - **Kibana** 8.19 — Visualization & dashboards
+- **Winlogbeat** 8.19 — Windows event log shipper
+
+## 📊 Results
+- ✅ FortiGate logs streaming in real-time to Kibana
+- ✅ Windows AD authentication events captured
+- ✅ 159+ events collected in first 15 minutes
+- ✅ Centralized security monitoring dashboard
 
 ## 📂 Contents
 - [Elasticsearch Setup](setup/elasticsearch.md)
