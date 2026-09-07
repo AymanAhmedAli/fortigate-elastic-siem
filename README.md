@@ -3,6 +3,7 @@
 Multi-source SIEM built from scratch in a virtualized lab: FortiGate firewall logs and Windows Active Directory events normalized to ECS, indexed in Elasticsearch, and visualized in Kibana dashboards.
 
 ## Architecture
+![SIEM Architecture](screenshots/architecture_diagram.png)
 FortiGate VM64 (172.18.178.220)
 | syslog UDP 5144
 v
