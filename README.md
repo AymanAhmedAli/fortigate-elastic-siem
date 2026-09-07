@@ -157,6 +157,13 @@ screenshots/
 
 ---
 
+
+## Notes
+
+Credentials in this repository are placeholders. Lab IP addresses are RFC 1918 private ranges from an isolated environment.
+
+---
+
 ## 👤 Author
 
 **Ayman Ahmed**
@@ -165,8 +172,3 @@ IT Specialist | Network Security | Penetration Testing
 [![GitHub](https://img.shields.io/badge/GitHub-AymanAhmedAli-black?style=flat&logo=github)](https://github.com/AymanAhmedAli)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-blue?style=flat&logo=linkedin)](https://www.linkedin.com/in/aymanahmedali/)
 [![TryHackMe](https://img.shields.io/badge/TryHackMe-Platinum-red?style=flat&logo=tryhackme)](https://tryhackme.com/p/aymanahmed)
-
-
-## Notes
-
-Credentials in this repository are placeholders. Lab IP addresses are RFC 1918 private ranges from an isolated environment.
