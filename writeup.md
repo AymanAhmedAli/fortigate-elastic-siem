@@ -1,6 +1,6 @@
 ## Project Overview
 
-As an IT Specialist at NAWY managing enterprise infrastructure across 3 office locations, I needed a centralized security monitoring solution to aggregate and analyze logs from multiple sources in real-time.
+As an IT Specialist managing enterprise infrastructure across multiple office locations, I needed a centralized security monitoring solution to aggregate and analyze logs from multiple sources in real-time.
 
 This project documents how I built a complete SIEM (Security Information and Event Management) system from scratch using open-source tools, integrating FortiGate firewall logs, Active Directory events, and Windows endpoint logs into a single Kibana dashboard.
 
