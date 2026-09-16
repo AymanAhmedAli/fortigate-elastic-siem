@@ -5,7 +5,7 @@ Multi-source SIEM built from scratch in a virtualized lab. FortiGate firewall lo
 ---
 
 ## Architecture
-
+![Architecture Diagram](screenshots/architecture_diagram.png)
 ```
 FortiGate VM64 (port1)
     │  syslog UDP 5144
