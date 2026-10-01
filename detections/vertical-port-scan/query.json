@@ -1,0 +1,26 @@
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "type": "traffic" } }
+      ],
+      "filter": {
+        "range": { "@timestamp": { "gte": "now-1m" } }
+      }
+    }
+  },
+  "aggs": {
+    "by_source": {
+      "terms": { "field": "source.ip", "size": 10 },
+      "aggs": {
+        "by_destination": {
+          "terms": { "field": "destination.ip", "size": 10 },
+          "aggs": {
+            "unique_ports": {
+              "cardinality": { "field": "destination.port" }
+            }
+          }
+        }
+      }
+    }
