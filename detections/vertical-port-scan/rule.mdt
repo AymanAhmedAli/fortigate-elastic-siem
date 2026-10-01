@@ -29,9 +29,6 @@ Alert: "Potential Vertical Port Scan Detected"
 | Technique | ID |
 |---|---|
 | Network Service Discovery | T1046 |
-> T1046 was chosen over T1595.002 because this scan represents
-> discovery activity against a reachable network (post-access
-> perspective), not external reconnaissance before initial access.
 
 ## Rationale
 A legitimate client connecting to a single external IP typically
@@ -44,4 +41,3 @@ activity (port scanning), not normal application traffic.
 - `query.json` — Elasticsearch aggregation query used to validate this rule
 - `simulation.md` — How the attack was simulated for testing
 - `investigation.md` — Evidence and findings from the test run
-

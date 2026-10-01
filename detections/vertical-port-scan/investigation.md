@@ -42,6 +42,10 @@ Query from `query.json`, run against the last 1 minute of traffic:
 | 172.18.183.50 | 151.101.129.91 | 2 |
 | 172.28.22.85 (NAT'd Kali) | 8.8.4.4 | 1 |
 | 172.28.22.85 (NAT'd Kali) | 8.8.8.8 | 1 |
+> **Note:** `172.18.183.50` and `172.28.22.85` refer to the same
+> host (Kali). The former is the pre-NAT source address; the latter
+> is the FortiGate-translated (SNAT) address visible on the WAN side
+> of the same connection.
 
 ### Finding
 The scanning host (172.18.183.50) contacted 8.8.8.8 on **911 unique
