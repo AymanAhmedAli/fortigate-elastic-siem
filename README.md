@@ -249,6 +249,22 @@ PUT _component_template/winlogbeat-single-node
 ```
 
 ---
+## Detection Engineering
+
+Building on the SIEM pipeline above, the project now includes
+documented, evidence-validated detection rules under `detections/`.
+Each rule includes its logic, a reproducible simulation, and real
+traffic evidence confirming it fires correctly.
+
+| Rule | Status | Evidence |
+|---|---|---|
+| [Vertical Port Scan](detections/vertical-port-scan/rule.md) | Validated | Scanning host hit 911 unique ports vs a 20-port threshold (~45x) |
+
+See `detections/vertical-port-scan/` for the full writeup: rule logic,
+MITRE ATT&CK mapping, attack simulation steps, and the investigation
+with raw evidence.
+
+---
 
 ## Repository contents
 
