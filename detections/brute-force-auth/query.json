@@ -1,0 +1,29 @@
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "must": [
+        { "match": { "event.code": "4625" } },
+        { "match": { "winlog.logon.type": "Network" } }
+      ],
+      "filter": {
+        "range": { "@timestamp": { "gte": "now-1m" } }
+      }
+    }
+  },
+  "aggs": {
+    "by_source": {
+      "terms": { "field": "source.ip", "size": 10 },
+      "aggs": {
+        "by_user": {
+          "terms": { "field": "user.name", "size": 10 },
+          "aggs": {
+            "failed_attempts": {
+              "value_count": { "field": "event.code" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
