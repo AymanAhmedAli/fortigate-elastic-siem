@@ -68,6 +68,15 @@ all — documented here for anyone reproducing this lab:
    installed and `/etc/krb5.conf` manually pointed at the DC's IP,
    since the lab has no DNS-based Kerberos realm discovery
    configured.
+4. **Network interruption during review fixes** — while updating
+   this rule's severity tiers, all outbound TCP connections from the
+   Ubuntu host (git push, curl) began timing out. Root cause: kesl
+   (Kaspersky Endpoint Security for Linux) was injecting netfilter
+   rules across all nftables tables (nat, filter, mangle, raw),
+   blocking outbound TCP connections. Service was stopped and
+   disabled permanently via systemctl (confirmed: disabled,
+   inactive/dead) — will not restart on reboot. Rebooted to flush
+   residual kernel-level rules after disabling.
 
 ## Conclusion
 The attacking host generated 6 failed authentication attempts within
