@@ -259,10 +259,11 @@ traffic evidence confirming it fires correctly.
 | Rule | Status | Evidence |
 |---|---|---|
 | [Vertical Port Scan](detections/vertical-port-scan/rule.md) | Validated | Scanning host hit 911 unique ports vs a 20-port threshold (~45x) |
+| [Brute Force Authentication](detections/brute-force-auth/rule.md) | Validated | 6 failed attempts in ~0.2s vs a 5-attempt/60s threshold; triggered AD lockout on attempt 6 |
 
-See `detections/vertical-port-scan/` for the full writeup: rule logic,
-MITRE ATT&CK mapping, attack simulation steps, and the investigation
-with raw evidence.
+See `detections/vertical-port-scan/` and `detections/brute-force-auth/`
+for the full writeups: rule logic, MITRE ATT&CK mapping, attack
+simulation steps, and the investigation with raw evidence.
 
 ---
 
