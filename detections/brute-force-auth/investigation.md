@@ -42,12 +42,12 @@ at the time of testing:
 
 ### Finding
 The attacking host generated 6 failed authentication attempts against
-a single account within approximately 0.2 seconds — well above the
-5-attempt / 60-second threshold. The AD account lockout policy
+a single account within approximately 0.2 seconds — well above Tier
+2's 5-attempt / 60-second threshold. The AD account lockout policy
 (threshold: 5) triggered automatically on the 6th attempt, confirming
-both the detection rule's threshold choice and the underlying AD
-hardening configuration (documented separately in the
-`powershell-scripts` AD hardening project) are working as designed.
+Tier 2's threshold choice and the underlying AD hardening
+configuration (documented separately in the `powershell-scripts` AD
+hardening project) are working as designed.
 
 ## Root Cause Notes (Pipeline Debugging)
 Three issues had to be resolved before this traffic was visible at
@@ -70,12 +70,21 @@ all — documented here for anyone reproducing this lab:
    configured.
 
 ## Conclusion
-Rule 2 is validated against real authentication failures. The
-5-attempt / 60-second threshold aligns directly with the AD account
-lockout policy already enforced in this environment, meaning the
-detection rule would fire at (or just before) the same point the
-directory service itself intervenes — giving a SOC analyst visibility
-into the attack as it happens, not just evidence of it afterward.
+The attacking host generated 6 failed authentication attempts within
+approximately 0.2 seconds — exceeding Tier 2's threshold (5 attempts
+/ 60 seconds) and triggering the AD account lockout policy on the
+6th attempt, confirming both thresholds align.
+
+**Design note from review:** the original single-tier design (High
+severity at 5 attempts) was reviewed and found to be a confirmation
+signal, not an early warning — since 5 attempts is also the AD
+lockout threshold, the alert would fire at the exact moment the
+account was already locked. This was split into two tiers (see
+`rule.md`): Tier 1 (3 attempts / 5 min, Low severity) now gives an
+analyst a window to act before lockout; Tier 2 (5 attempts / 60 sec,
+Medium severity) confirms the lockout event itself for tracking and
+correlation. This test run validated Tier 2 directly; Tier 1 has not
+yet been tested against a slower attack pattern (see Next Steps).
 
 ## Next Steps
 - [ ] Implement the severity escalation noted in `rule.md`: raise to
@@ -87,3 +96,6 @@ into the attack as it happens, not just evidence of it afterward.
       usernames) as a separate, related detection
 - [ ] Test against a slower/distributed brute force pattern to check
       whether the 60-second window still catches a throttled attack
+- [ ] Test Tier 1 specifically with a throttled attack (e.g. 3-4
+      failed attempts spread over 2-3 minutes) to confirm it fires
+      before lockout, not just alongside Tier 2
