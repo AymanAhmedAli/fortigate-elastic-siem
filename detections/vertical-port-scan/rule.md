@@ -45,3 +45,7 @@ activity (port scanning), not normal application traffic.
 - `simulation.md` — How the attack was simulated for testing
 - `investigation.md` — Evidence and findings from the test run
 
+
+## Current tuning follow-up
+
+The 60-second rule above is the initial design. A separate 20-unique-port / 10-second candidate can miss slower scans. See [current fast/slow validation](../port-scan/README.md) and [queries](../port-scan/queries.md). Manual query validation does not confirm deployed alerts.

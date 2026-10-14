@@ -29,9 +29,9 @@
 
 ---
 
-## ⚠️ Known Issue — Timestamp Offset
+## ⚠️ Historical Issue — Timestamp Offset
 
-FortiOS 7.0.5 treats Cairo as GMT+2.
+The earlier FortiOS 7.0.5 deployment treated Cairo as GMT+2; this is not a verified issue on the current FortiOS 7.6.7 build3704.
 Egypt moved to GMT+3 (EEST) in 2023.
 **Fix:** Use `eventtime` field (UTC epoch) instead of `date`/`time`.
 
@@ -50,15 +50,30 @@ Egypt moved to GMT+3 (EEST) in 2023.
 
 ## 🔑 Reference
 
-| Component | Value |
-|-----------|-------|
-| FortiGate | 172.18.178.220 |
-| ELK Stack | 172.18.183.113 |
-| DC | 172.18.183.10 |
-| Client | 172.18.183.20 |
-| Syslog port | UDP 5144 |
-| Kibana | HTTP 5601 |
-| Elasticsearch | HTTPS 9200 |
+The trusted infrastructure now shares one internal LAN, `10.10.10.0/24`, behind FortiGate. Kali is isolated on `10.10.20.0/24`; its traffic to the internal LAN must traverse FortiGate for forwarding-policy logging. Keep the virtual networks separate and avoid secondary adapters or routes that bypass the firewall.
+
+| System / interface | Current lab address | Role |
+|---|---|---|
+| FortiGate port1 | 172.27.247.135/20 | Dynamic lab WAN; address may change |
+| FortiGate port2 | 10.10.10.1/24 | Internal LAN gateway |
+| Domain Controller / DNS | 10.10.10.10 | Trusted LAN |
+| Ubuntu Elastic / Kibana / Logstash | 10.10.10.20 | Trusted LAN collector and scan target |
+| Windows Client | 10.10.10.30 | Trusted LAN |
+| FortiGate port3 | 10.10.20.1/24 | Attacker segment gateway |
+| Kali | 10.10.20.10 | Isolated attacker segment |
+
+```text
+Dynamic lab WAN -> port1 FortiGate-VM64 (FortiOS 7.6.7 build3704)
+                       | port2 10.10.10.1 -> trusted LAN 10.10.10.0/24
+                       |                   DC/DNS .10, Ubuntu .20, Client .30
+                       | port3 10.10.20.1 -> attacker LAN 10.10.20.0/24
+                                           Kali 10.10.20.10
+
+FortiGate -> syslog UDP/5144 -> Logstash -> Elasticsearch -> Kibana
+Windows/AD -> Winlogbeat -> Elasticsearch -> Kibana
+```
+
+The Elastic services run together on Ubuntu `10.10.10.20`. Internal systems use `10.10.10.1` as their gateway and `10.10.10.10` for lab DNS; Kali uses `10.10.20.1` as its gateway. The current scan path is port3 -> policy 2 (`ATTACKER-to_LAN`) -> port2 -> `10.10.10.20`.
 
 ---
 

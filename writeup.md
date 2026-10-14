@@ -18,6 +18,8 @@ Before this project, our security monitoring was fragmented:
 
 ## Architecture
 
+Current segmented topology: see [README architecture](README.md#architecture). Trusted infrastructure shares `10.10.10.0/24`; Kali is isolated on `10.10.20.0/24` behind FortiGate port3.
+
 ```
 FortiGate Firewall
     ↓ Syslog (UDP 5144)
@@ -42,7 +44,7 @@ Elasticsearch → Kibana
 
 | Component | Version | Role |
 |-----------|---------|------|
-| FortiGate | v7.0.5 | Firewall & log source |
+| FortiGate | FortiGate-VM64, FortiOS 7.6.7 build3704 | Firewall & log source |
 | Elasticsearch | 8.19.21 | Log storage & indexing |
 | Logstash | 8.19.21 | Log collection & parsing |
 | Kibana | 8.19.21 | Visualization & dashboards |
@@ -70,7 +72,7 @@ Configured FortiGate to send logs via Syslog to Logstash:
 ```
 config log syslogd setting
     set status enable
-    set server "172.18.183.113"
+    set server "10.10.10.20"
     set port 5144
     set facility local7
     set format default
