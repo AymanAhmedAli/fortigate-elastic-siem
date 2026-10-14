@@ -18,7 +18,7 @@ sudo systemctl start kibana
 ```
 
 ## Access
-http://172.25.31.6:5601
+http://10.10.10.20:5601
 
 
 ## Connect to Elasticsearch

@@ -5,36 +5,43 @@ Multi-source SIEM built from scratch in a virtualized lab. FortiGate firewall lo
 ---
 
 ## Architecture
-![Architecture Diagram](screenshots/architecture_diagram.png)
+The trusted infrastructure now shares one internal LAN, `10.10.10.0/24`, behind FortiGate. Kali is isolated on `10.10.20.0/24`; its traffic to the internal LAN must traverse FortiGate for forwarding-policy logging. Keep the virtual networks separate and avoid secondary adapters or routes that bypass the firewall.
+
+| System / interface | Current lab address | Role |
+|---|---|---|
+| FortiGate port1 | 172.27.247.135/20 | Dynamic lab WAN; address may change |
+| FortiGate port2 | 10.10.10.1/24 | Internal LAN gateway |
+| Domain Controller / DNS | 10.10.10.10 | Trusted LAN |
+| Ubuntu Elastic / Kibana / Logstash | 10.10.10.20 | Trusted LAN collector and scan target |
+| Windows Client | 10.10.10.30 | Trusted LAN |
+| FortiGate port3 | 10.10.20.1/24 | Attacker segment gateway |
+| Kali | 10.10.20.10 | Isolated attacker segment |
+
+```text
+Dynamic lab WAN -> port1 FortiGate-VM64 (FortiOS 7.6.7 build3704)
+                       | port2 10.10.10.1 -> trusted LAN 10.10.10.0/24
+                       |                   DC/DNS .10, Ubuntu .20, Client .30
+                       | port3 10.10.20.1 -> attacker LAN 10.10.20.0/24
+                                           Kali 10.10.20.10
+
+FortiGate -> syslog UDP/5144 -> Logstash -> Elasticsearch -> Kibana
+Windows/AD -> Winlogbeat -> Elasticsearch -> Kibana
 ```
-FortiGate VM64 (port1)
-    │  syslog UDP 5144
-    ▼
-Logstash ── grok → kv → eventtime parsing → ECS mapping → geoip
-    │
-    ▼
-Elasticsearch 8.19.21 (Ubuntu 24.04, single node)
-    ▲
-    │  Winlogbeat 8.19.21 + ingest pipelines
-    │
-Windows Server 2022 DC (test.local) ── GPO ──> Windows Client
-    │
-    ▼
-Kibana 8.19.21
-```
+
+The Elastic services run together on Ubuntu `10.10.10.20`. Internal systems use `10.10.10.1` as their gateway and `10.10.10.10` for lab DNS; Kali uses `10.10.20.1` as its gateway. The current scan path is port3 -> policy 2 (`ATTACKER-to_LAN`) -> port2 -> `10.10.10.20`.
 
 ## Stack
 
 | Component | Version |
 |---|---|
-| FortiGate | VM64 v7.0.5 build0304 |
+| FortiGate | FortiGate-VM64, FortiOS 7.6.7 build3704 |
 | Elasticsearch | 8.19.21 |
 | Kibana | 8.19.21 |
 | Logstash | 8.19.21 |
 | Winlogbeat | 8.19.21 |
 | Windows Server | 2022 (Domain Controller) |
 | Host OS | Ubuntu 24.04 |
-| Hypervisor | VMware (bridged networking) |
+| Hypervisor | VMware (separate WAN, trusted LAN, and attacker networks) |
 
 ## Data volume
 
@@ -77,6 +84,8 @@ Exported saved objects are in `dashboards/` and can be imported via
 ---
 
 ## Detection validation
+
+The following historical validation predates the segmented lab. Current fast/slow internal-target results are documented in [Port scan validation](detections/port-scan/README.md).
 
 A full TCP SYN scan was run against the firewall to verify end-to-end pipeline function:
 
@@ -128,8 +137,7 @@ for operations that require per-document field data like aggregations
 ```
 
 An existing index cannot be remapped. Recovery meant routing to a new pattern
-(`fortigate-v2-*`) backed by an explicit template at `priority: 600` — see
-`configs/index-templates.json`.
+(`fortigate-v2-*`) backed by an explicit template at `priority: 600` — the index template in the live lab (not currently exported in this repository).
 
 ### The `type` field collides with FortiGate's own schema
 
@@ -142,9 +150,7 @@ just stop being enriched.
 
 ### Parse the vendor's absolute timestamp, not its formatted local time
 
-FortiOS 7.0.5 treats Cairo as GMT+2, but Egypt observes GMT+3 (EEST) since DST returned
-in 2023. The OS timezone database predates the change, so the device's displayed clock is
-permanently offset — and no manual correction survives an NTP sync.
+During the earlier FortiOS 7.0.5 deployment, Cairo timezone handling produced an offset after Egypt restored DST in 2023. This is a historical finding, not a verified issue on the current FortiOS 7.6.7 build3704. Keep parsing absolute UTC `eventtime` and verify time synchronization after upgrades.
 
 Symptoms: every `@timestamp` landed hours in the future, relative time ranges in Kibana
 returned nothing, and correlation between firewall and AD events would have been
@@ -253,11 +259,11 @@ PUT _component_template/winlogbeat-single-node
 
 Building on the SIEM pipeline above, the project now includes
 documented, evidence-validated detection rules under `detections/`.
-Each rule includes its logic, a reproducible simulation, and real
-traffic evidence confirming it fires correctly.
+The existing rule writeups include manual aggregation evidence; they do not establish that a live Kibana alert is deployed. Historical evidence is labeled separately from the current segmented-lab validation.
 
 | Rule | Status | Evidence |
 |---|---|---|
+| [Current fast / slow port scans](detections/port-scan/README.md) | Telemetry validated; tuning in progress | Fast: 100 events / 100 ports / ~10 ms; slow: 111 events / 100 ports / ~60.89 s |
 | [Vertical Port Scan](detections/vertical-port-scan/rule.md) | Validated | Scanning host hit 911 unique ports vs a 20-port threshold (~45x) |
 | [Brute Force Authentication](detections/brute-force-auth/rule.md) | Validated | 6 failed attempts in ~0.2s vs a 5-attempt/60s threshold; triggered AD lockout on attempt 6 |
 
@@ -271,17 +277,21 @@ simulation steps, and the investigation with raw evidence.
 
 ```
 configs/
-  fortigate.conf          Logstash pipeline (credentials redacted)
-  winlogbeat.yml          Winlogbeat configuration
-  index-templates.json    Elasticsearch index templates
+  fortigate.conf          Logstash pipeline (credential placeholder)
 setup/
-  01-elasticsearch.md     Install, network.host, initial passwords
-  02-logstash.md          Pipeline setup, syslog input
-  03-winlogbeat-gpo.md    GPO-based agent deployment
-  04-fortigate-syslog.md  Syslog + local-in logging configuration
+  elasticsearch.md        Elasticsearch installation
+  logstash.md             Logstash setup
+  kibana.md               Kibana setup
+  fortigate.md            FortiGate syslog configuration
+docs/
+  project-notes.md        Lab notes and addressing
+detections/
+  port-scan/             Current fast/slow scans and validation queries
+  vertical-port-scan/    Historical scan evidence and initial rule
+  brute-force-auth/      Authentication rule and historical evidence
 dashboards/
   siem-dashboards.ndjson  Exported Kibana saved objects
-screenshots/
+screenshots/             Historical screenshots; not current topology
 ```
 
 ## Notes

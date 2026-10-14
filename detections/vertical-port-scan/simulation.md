@@ -1,5 +1,8 @@
 # Simulation — Vertical Port Scan
 
+> Historical evidence / procedure from the previous topology. Old IPs, interface roles, NAT addresses, timestamps, and counts below are retained as historical records, not current configuration. For current lab addressing see [README](../../README.md#architecture); for current internal fast/slow scans see [port-scan validation](../port-scan/README.md). Do not reuse the old external-target scan commands for the current lab.
+
+
 ## Objective
 Generate realistic port scan traffic through the FortiGate firewall
 to validate Rule 1 (Vertical Port Scan Detection).
