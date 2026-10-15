@@ -68,6 +68,8 @@ This is a lab-tuned threshold, not a claimed production baseline.
 
 The fourth test is important: the rule detected the same behavior from a different host using a different scanning method, confirming that the final rule is not tied to Kali or Nmap.
 
+> **Alert-count clarification:** the final Kibana alert count reached **4**, but the normal-traffic test did **not** create an alert. The four alerts came from: (1) the initial fast Nmap scan, (2) the slow Nmap scan, (3) a second fast Nmap scan after the custom query was generalized from the hard-coded Kali IP to `*`, and (4) the PowerShell scan from `10.10.20.30`.
+
 ## Test 1 — fast Nmap scan
 
 ```bash
@@ -150,7 +152,7 @@ One-minute histogram results:
 | 12:31 | 145 | 32 |
 | 12:32 | 106 | 24 |
 
-The alert appeared after ingestion/rule execution, bringing the validation total to four alerts across the test sequence. This confirmed the generalized rule could detect port-scanning behavior from a different source and tool.
+The PowerShell test generated the fourth alert in the recorded sequence. The normal-traffic test generated no alert; the third alert had already been created by repeating the fast Nmap scan after the rule was generalized to `*`. This confirmed the generalized rule could detect port-scanning behavior from a different source and tool.
 
 ## Detection-engineering lessons
 
