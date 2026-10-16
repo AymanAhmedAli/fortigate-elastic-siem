@@ -2,24 +2,30 @@
   "size": 0,
   "query": {
     "bool": {
-      "must": [
-        { "match": { "event.code": "4625" } },
-        { "match": { "winlog.logon.type": "Network" } }
-      ],
-      "filter": {
-        "range": { "@timestamp": { "gte": "now-1m" } }
-      }
+      "filter": [
+        { "term": { "event.code": "4625" } },
+        { "term": { "winlog.event_data.LogonType": "3" } },
+        { "range": { "@timestamp": { "gte": "now-5m" } } }
+      ]
     }
   },
   "aggs": {
     "by_source": {
-      "terms": { "field": "source.ip", "size": 10 },
+      "terms": {
+        "field": "source.ip",
+        "size": 20
+      },
       "aggs": {
-        "by_user": {
-          "terms": { "field": "user.name", "size": 10 },
+        "by_target_user": {
+          "terms": {
+            "field": "winlog.event_data.TargetUserName",
+            "size": 20
+          },
           "aggs": {
             "failed_attempts": {
-              "value_count": { "field": "event.code" }
+              "value_count": {
+                "field": "event.code"
+              }
             }
           }
         }
