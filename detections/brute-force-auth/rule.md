@@ -1,57 +1,99 @@
-# Rule 2 — Failed Login Brute Force Detection
+# Rule 2 — Possible Brute Force - Failed Logons
 
-## Overview
-Detects a potential brute force attack when a single source IP
-generates multiple failed authentication attempts against the same
-destination IP and username within a short time window.
+## Status
+**Implemented and validated in Kibana Detection Engine on 2026-10-16.**
 
-## Detection Logic — Two-Tier Design
+This file documents the currently implemented rule. Older two-tier design ideas are retained below as historical design notes, but the active validated rule is the single threshold rule described here.
 
-This rule uses two severity tiers rather than a single threshold,
-because the AD lockout threshold (5 attempts) and a useful early
-warning threshold are not the same number — alerting only at 5 means
-the alert fires at the same moment the account locks, confirming
-damage rather than warning before it.
+## Objective
+Detect repeated Windows network logon failures from the same source IP against the same target account before the Active Directory account lockout threshold is reached.
 
-### Tier 1 — Early Warning (Low Severity)
+## Active Rule Configuration
 
-IF:
-event.code == 4625
-AND event.outcome == "failure"
-AND winlog.logon.type == "Network"
-AND same source.ip + destination.ip + user.name
-AND failed attempt count >= 3
-AND within a 5 minute window
-THEN:
-Generate a Low Severity Alert: "Suspicious repeated failed logons"
+| Setting | Value |
+|---|---|
+| Name | `Possible Brute Force - Failed Logons` |
+| Rule type | Threshold |
+| Index pattern | `winlogbeat-*` |
+| Query language | KQL |
+| Custom query | `event.code: "4625" AND winlog.event_data.LogonType: "3"` |
+| Group by | `source.ip`, `winlog.event_data.TargetUserName` |
+| Threshold | `>= 4` |
+| Count | All results |
+| Severity | Medium |
+| Risk score | 47 |
+| Runs every | 1 minute |
+| Additional look-back | widened during tuning to cover observed authentication delay |
+| Actions | None |
 
-Purpose: surface the pattern before the account locks, while there is
-still time to investigate or block the source.
+## Why Threshold 4?
+The current AD account lockout threshold is **5 failed attempts**.
 
-### Tier 2 — Lockout Confirmation (Medium Severity)
+Alerting at 5 would fire at the same point the account locks. The active rule therefore uses a threshold of **4** so the detection can provide an early-warning signal before the fifth failure causes lockout.
 
-IF:
-event.code == 4625
-AND event.outcome == "failure"
-AND winlog.logon.type == "Network"
-AND same source.ip + destination.ip + user.name
-AND failed attempt count >= 5
-AND within a 60 second window
-THEN:
-Generate a Medium Severity Alert: "Account lockout threshold reached"
+```text
+4 effective failures → Detection alert
+5 effective failures → AD lockout threshold
+```
 
-Purpose: confirms the AD lockout policy itself has (or is about to)
-engage — this matches the native AD lockout threshold exactly, so it
-functions as a correlation/confirmation signal rather than an early
-warning. Useful for tracking which source IP triggered a real lockout,
-for later blocking or correlation with other activity.
+## Why Event ID 4625?
+Windows Security Event ID **4625** represents a failed logon. The validated test produced:
 
-## Parameters
+```text
+event.code: 4625
+source.ip: 10.10.10.30
+winlog.event_data.LogonType: 3
+winlog.event_data.AuthenticationPackageName: NTLM
+```
 
-| Tier | Threshold | Window | Severity |
-|---|---|---|---|
-| Tier 1 — Early Warning | 3+ attempts | 5 minutes | Low |
-| Tier 2 — Lockout Confirmation | 5+ attempts | 60 seconds | Medium |
+`LogonType: 3` narrows the detection to network logons and matches the SMB authentication simulation used for validation.
+
+## Grouping Logic
+The threshold rule groups by:
+
+```text
+source.ip
+winlog.event_data.TargetUserName
+```
+
+This means the rule looks for repeated failures from the **same source** against the **same target user**, rather than simply counting all 4625 events in the environment.
+
+## Timing / Look-back Tuning
+During validation, failed SMB authentication attempts sometimes took approximately 15–21 seconds each. A set of sequential failures could therefore span multiple one-minute rule executions.
+
+The initial narrow look-back was widened during tuning so that all effective failures could be evaluated together.
+
+This is an important detection-engineering lesson: the time window must be based on observed telemetry timing, not just the intended attack speed.
+
+## Validation Result
+A clean test account was used and stopped at:
+
+```text
+badPwdCount = 4
+LockedOut   = False
+```
+
+Four relevant Event ID 4625 documents were visible in Elastic. Kibana then generated:
+
+```text
+Possible Brute Force - Failed Logons
+Severity: Medium
+Risk score: 47
+Source: 10.10.10.30
+Alert count: 1
+```
+
+The full validated chain was:
+
+```text
+Windows Client
+→ failed network authentication
+→ DC Event ID 4625
+→ Winlogbeat
+→ Elasticsearch
+→ Kibana threshold rule
+→ alert
+```
 
 ## MITRE ATT&CK Mapping
 
@@ -59,29 +101,28 @@ for later blocking or correlation with other activity.
 |---|---|
 | Brute Force | T1110 |
 
-## Rationale
-A legitimate user who mistypes a password typically fails once or
-twice before succeeding or giving up. Three or more failed attempts
-within five minutes already deviates from normal behavior; five or
-more within one minute is consistent with automated credential-
-guessing tools.
+## False Positive Considerations
+Potential benign causes include:
+- a legitimate user repeatedly mistyping a password;
+- stale cached credentials or mapped resources;
+- a service/task using an outdated password;
+- administrative testing.
 
-## Severity Reasoning
-Originally this rule used a single High-severity tier at the
-5-attempt threshold. On review, this threshold exactly matches the
-AD account lockout policy — meaning the "detection" fired at the same
-moment the account was already locked, which is confirmation after
-the fact, not early warning. Splitting into two tiers fixes this:
-Tier 1 gives an analyst time to act before lockout; Tier 2 confirms
-the lockout event itself for tracking and correlation.
+Analyst triage should review source IP, target account, timing, authentication package, surrounding logon activity, and whether a successful logon follows the failures.
 
-**Escalation note (future work):** either tier's severity should
-increase if a failed-attempt burst is immediately followed by a
-successful logon (event.code 4624) for the same account — this would
-indicate the attack succeeded, not just that it was attempted. Not
-implemented in this initial rule; see `investigation.md` for details.
+## Severity Escalation — Future Work
+The current rule is Medium severity. A future correlation rule should raise severity when the failed-attempt burst is followed by a successful logon (`4624`) for the same account/source, because that changes the scenario from attempted guessing to possible account compromise.
+
+## Historical Design Note
+An earlier version of this documentation proposed a two-tier model:
+- 3 failures / 5 minutes → Low early warning;
+- 5 failures / 60 seconds → Medium lockout confirmation.
+
+That model was useful during design review, but the current implemented/validated rule uses **4 failures** as a practical pre-lockout threshold aligned with the lab's AD policy.
 
 ## Related Files
-- `query.json` — Elasticsearch aggregation query used to validate this rule
-- `simulation.md` — How the attack was simulated for testing
-- `investigation.md` — Evidence and findings from the test run
+- `README.md` — current end-to-end validation and evidence summary
+- `troubleshooting.md` — infrastructure, telemetry, and rule-tuning journey
+- `query.json` — investigation/aggregation query aligned to current event fields
+- `simulation.md` — historical simulation from the previous topology
+- `investigation.md` — historical evidence from the previous topology
